@@ -1,0 +1,36 @@
+{
+  "label2id": {
+    "Anchoring Bias": 0,
+    "Availability Heuristic": 1,
+    "Bandwagon Effect": 2,
+    "Black-or-White Thinking": 3,
+    "Catastrophizing": 4,
+    "Confirmation Bias": 5,
+    "Emotional Reasoning": 6,
+    "Jumping to Conclusions": 7,
+    "Labeling": 8,
+    "Optimism Bias": 9,
+    "Overgeneralization": 10,
+    "Personalization": 11,
+    "Self-Serving Bias": 12,
+    "Should Statements": 13,
+    "Sunk Cost Fallacy": 14
+  },
+  "id2label": {
+    "0": "Anchoring Bias",
+    "1": "Availability Heuristic",
+    "2": "Bandwagon Effect",
+    "3": "Black-or-White Thinking",
+    "4": "Catastrophizing",
+    "5": "Confirmation Bias",
+    "6": "Emotional Reasoning",
+    "7": "Jumping to Conclusions",
+    "8": "Labeling",
+    "9": "Optimism Bias",
+    "10": "Overgeneralization",
+    "11": "Personalization",
+    "12": "Self-Serving Bias",
+    "13": "Should Statements",
+    "14": "Sunk Cost Fallacy"
+  }
+}
