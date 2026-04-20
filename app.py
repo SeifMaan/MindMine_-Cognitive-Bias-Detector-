@@ -10,8 +10,16 @@ import os
 import json
 import streamlit as st
 import torch
-from mistralai import Mistral
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+
+# ── Mistral Import (Fixed for Hugging Face Spaces) ───────────────────────────
+try:
+    from mistralai import Mistral
+    client = Mistral(api_key=st.secrets.get("MISTRAL_API_KEY") or os.environ.get("MISTRAL_API_KEY"))
+    MODEL_NAME = "mistral-large-latest"
+except ImportError:
+    st.error("⚠️ Mistral AI package not installed. Check requirements.txt")
+    st.stop()
 
 # ── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -27,9 +35,6 @@ MISTRAL_API_KEY = st.secrets.get("MISTRAL_API_KEY") or os.environ.get("MISTRAL_A
 if not MISTRAL_API_KEY:
     st.error("⚠️ MISTRAL_API_KEY not found. Add it in Streamlit secrets.")
     st.stop()
-
-client = Mistral(api_key=MISTRAL_API_KEY)
-MODEL_NAME = "mistral-large-latest"
 
 # ── Load Classifier ───────────────────────────────────────────────────────────
 MODEL_DIR = "./bias_model"
@@ -113,7 +118,9 @@ Return ONLY valid JSON:
         # safe JSON cleanup
         if "```" in raw:
             raw = raw.split("```")[1]
-            raw = raw.replace("json", "").strip()
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
 
         return json.loads(raw)
 
