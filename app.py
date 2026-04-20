@@ -8,18 +8,10 @@ Pipeline:
 
 import os
 import json
+import requests
 import streamlit as st
 import torch
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
-
-# ── Mistral Import (Fixed for Hugging Face Spaces) ───────────────────────────
-try:
-    from mistralai import Mistral
-    client = Mistral(api_key=st.secrets.get("MISTRAL_API_KEY") or os.environ.get("MISTRAL_API_KEY"))
-    MODEL_NAME = "mistral-large-latest"
-except ImportError:
-    st.error("⚠️ Mistral AI package not installed. Check requirements.txt")
-    st.stop()
 
 # ── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -78,7 +70,7 @@ def detect_biases(text: str, top_k=3, threshold=0.08):
     return [(b, c) for b, c in scored[:top_k] if c >= threshold]
 
 
-# ── Mistral Explanation Generator ─────────────────────────────────────────────
+# ── Mistral Explanation Generator (Direct API Call) ───────────────────────────
 def get_explanation(text: str, bias_name: str, tone: str):
 
     tone_map = {
@@ -87,8 +79,7 @@ def get_explanation(text: str, bias_name: str, tone: str):
         "Neutral": "balanced and objective",
     }
 
-    prompt = f"""
-You are a cognitive bias expert.
+    prompt = f"""You are a cognitive bias expert.
 
 TEXT:
 {text}
@@ -99,32 +90,45 @@ BIAS:
 TONE:
 {tone_map[tone]}
 
-Return ONLY valid JSON:
+Return ONLY valid JSON (no other text):
 {{
   "explanation": "2-3 sentences explaining the bias in this text",
   "reframe": "1-3 sentences offering a healthier perspective"
-}}
-"""
+}}"""
 
     try:
-        response = client.chat.complete(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+        response = requests.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {MISTRAL_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "mistral-large-latest",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7
+            },
+            timeout=30
         )
-
-        raw = response.choices[0].message.content.strip()
-
-        # safe JSON cleanup
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-            raw = raw.strip()
-
-        return json.loads(raw)
-
-    except Exception:
+        
+        if response.status_code == 200:
+            raw = response.json()["choices"][0]["message"]["content"].strip()
+            
+            # Clean JSON
+            if "```" in raw:
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+            
+            return json.loads(raw)
+        else:
+            return {
+                "explanation": f"This reflects patterns consistent with {bias_name}.",
+                "reframe": "Try to consider alternative explanations and broader context.",
+            }
+            
+    except Exception as e:
         return {
             "explanation": f"This reflects patterns consistent with {bias_name}.",
             "reframe": "Try to consider alternative explanations and broader context.",
